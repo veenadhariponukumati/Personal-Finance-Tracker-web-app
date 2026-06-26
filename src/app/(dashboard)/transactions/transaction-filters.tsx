@@ -3,18 +3,17 @@
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback } from "react"
 
-const CATEGORIES = [
-  { id: "1", name: "Food" }, { id: "2", name: "Rent" }, { id: "3", name: "Transport" },
-  { id: "4", name: "Shopping" }, { id: "5", name: "Entertainment" }, { id: "6", name: "Bills" },
-  { id: "7", name: "Salary" }, { id: "8", name: "Other" },
-]
+interface Category {
+  id: string
+  name: string
+}
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 
 export function TransactionFilters({
-  currentCategoryId, currentMonth, currentYear,
+  currentCategoryId, currentMonth, currentYear, categories
 }: {
-  currentCategoryId?: string; currentMonth?: string; currentYear?: string
+  currentCategoryId?: string; currentMonth?: string; currentYear?: string; categories: Category[]
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,7 +34,7 @@ export function TransactionFilters({
         <select id="filter-category" value={currentCategoryId ?? ""} onChange={(e) => updateFilter("categoryId", e.target.value || null)}
           className="block w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500">
           <option value="">All Categories</option>
-          {CATEGORIES.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
+          {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
         </select>
       </div>
       <div className="flex-1 min-w-[120px]">

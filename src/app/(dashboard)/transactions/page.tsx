@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { getTransactions } from "@/actions/transactions"
+import { getCategories } from "@/actions/dashboard"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -43,6 +44,8 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
   if (!session) redirect("/login")
 
   const params = await searchParams
+  const categoriesRes = await getCategories()
+  const categories = categoriesRes.success ? (categoriesRes.data ?? []) : []
 
   return (
     <div className="space-y-6">
@@ -57,7 +60,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
         </a>
       </div>
 
-      <TransactionFilters currentCategoryId={params.categoryId} currentMonth={params.month} currentYear={params.year} />
+      <TransactionFilters currentCategoryId={params.categoryId} currentMonth={params.month} currentYear={params.year} categories={categories} />
 
       <Suspense fallback={<SkeletonTable />}>
         <TransactionList categoryId={params.categoryId} month={params.month} year={params.year} />

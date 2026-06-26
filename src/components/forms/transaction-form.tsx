@@ -5,16 +5,10 @@ import { useRouter } from "next/navigation"
 import { createTransaction, updateTransaction } from "@/actions/transactions"
 import type { CreateTransactionInput } from "@/schemas/transaction"
 
-const CATEGORIES = [
-  { id: "1", name: "Food" },
-  { id: "2", name: "Rent" },
-  { id: "3", name: "Transport" },
-  { id: "4", name: "Shopping" },
-  { id: "5", name: "Entertainment" },
-  { id: "6", name: "Bills" },
-  { id: "7", name: "Salary" },
-  { id: "8", name: "Other" },
-]
+interface Category {
+  id: string
+  name: string
+}
 
 interface TransactionFormProps {
   initialData?: {
@@ -25,13 +19,14 @@ interface TransactionFormProps {
     type: "INCOME" | "EXPENSE"
     categoryId: string
   }
+  categories: Category[]
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 type FormErrors = Partial<Record<keyof CreateTransactionInput, string>>
 
-export function TransactionForm({ initialData, onSuccess, onCancel }: TransactionFormProps) {
+export function TransactionForm({ initialData, categories, onSuccess, onCancel }: TransactionFormProps) {
   const router = useRouter()
   const isEdit = !!initialData
 
@@ -153,7 +148,7 @@ export function TransactionForm({ initialData, onSuccess, onCancel }: Transactio
           className={`mt-1 block w-full rounded-md border p-2 ${errors.categoryId ? "border-red-500" : "border-gray-300"} focus:border-blue-500 focus:ring-blue-500`}
         >
           <option value="">Select a category</option>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>{cat.name}</option>
           ))}
         </select>
