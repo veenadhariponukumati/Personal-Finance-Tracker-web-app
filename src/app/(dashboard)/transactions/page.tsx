@@ -1,28 +1,67 @@
-export default function TransactionsPage() {
+import { Suspense } from "react"
+import { getTransactions } from "@/actions/transactions"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorBanner } from "@/components/ui/error-banner"
+import { SkeletonTable } from "@/components/ui/loading"
+import { TransactionFilters } from "./transaction-filters"
+import { TransactionTable } from "./transaction-table"
+
+interface PageProps {
+  searchParams: Promise<{ categoryId?: string; month?: string; year?: string }>
+}
+
+async function TransactionList({ categoryId, month, year }: { categoryId?: string; month?: string; year?: string }) {
+  const filters: { categoryId?: string; month?: number; year?: number } = {}
+  if (categoryId) filters.categoryId = categoryId
+  if (month) filters.month = parseInt(month, 10) - 1
+  if (year) filters.year = parseInt(year, 10)
+
+  const result = await getTransactions(filters)
+  if (!result.success) {
+    return <ErrorBanner message={result.error ?? "Failed to load transactions"} onRetryLabel="Reload page" />
+  }
+
+  const transactions = result.data ?? []
+  if (transactions.length === 0) {
+    const hasFilters = !!(categoryId || month || year)
+    return (
+      <EmptyState
+        title={hasFilters ? "No matching transactions" : "No transactions yet"}
+        description={hasFilters ? "Try adjusting your filters to see more results." : "Add your first transaction to start tracking your finances!"}
+        action={hasFilters ? undefined : { label: "Add Transaction", href: "/transactions/new" }}
+      />
+    )
+  }
+
+  return <TransactionTable transactions={transactions} />
+}
+
+export default async function TransactionsPage({ searchParams }: PageProps) {
+  const session = await auth()
+  if (!session) redirect("/login")
+
+  const params = await searchParams
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Transactions</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">Add Transaction</button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Transactions</h2>
+          <p className="text-gray-500 text-sm">Manage your income and expenses</p>
+        </div>
+        <a href="/transactions/new"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center text-sm font-medium">
+          Add Transaction
+        </a>
       </div>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            <tr>
-              <td colSpan={5} className="px-6 py-10 text-center text-gray-400 italic">No transactions yet</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+
+      <TransactionFilters currentCategoryId={params.categoryId} currentMonth={params.month} currentYear={params.year} />
+
+      <Suspense fallback={<SkeletonTable />}>
+        <TransactionList categoryId={params.categoryId} month={params.month} year={params.year} />
+      </Suspense>
     </div>
   )
 }

@@ -1,52 +1,75 @@
-import { getDashboardSummary } from "@/actions/dashboard"
+import { Suspense } from "react"
+import { getDashboardSummary, getMonthlyData } from "@/actions/dashboard"
+import { MonthlyChart } from "@/components/dashboard/monthly-chart"
+import { ErrorBanner } from "@/components/ui/error-banner"
+import { SkeletonCard } from "@/components/ui/loading"
 
-export default async function DashboardPage() {
+async function SummaryCards() {
   const summaryRes = await getDashboardSummary()
-  const summary = summaryRes.success ? summaryRes.data : { totalIncome: 0, totalExpenses: 0, balance: 0 }
+  if (!summaryRes.success || !summaryRes.data) {
+    return <ErrorBanner message={summaryRes.error ?? "Failed to load dashboard data"} onRetryLabel="Reload page" />
+  }
+
+  const { totalIncome, totalExpenses, balance } = summaryRes.data
+  const hasData = totalIncome > 0 || totalExpenses > 0
 
   return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+      <div className="bg-white p-5 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+        <p className="text-gray-500 text-xs md:text-sm tracking-wide uppercase">Total Income</p>
+        <p className="text-xl md:text-2xl font-bold text-green-600 mt-1">${totalIncome.toFixed(2)}</p>
+        {!hasData && <p className="text-xs text-gray-400 mt-1">No income yet</p>}
+      </div>
+      <div className="bg-white p-5 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+        <p className="text-gray-500 text-xs md:text-sm tracking-wide uppercase">Total Expenses</p>
+        <p className="text-xl md:text-2xl font-bold text-red-600 mt-1">${totalExpenses.toFixed(2)}</p>
+        {!hasData && <p className="text-xs text-gray-400 mt-1">No expenses yet</p>}
+      </div>
+      <div className="bg-white p-5 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+        <p className="text-gray-500 text-xs md:text-sm tracking-wide uppercase">Current Balance</p>
+        <p className={`text-xl md:text-2xl font-bold mt-1 ${balance >= 0 ? "text-blue-600" : "text-red-600"}`}>
+          ${balance.toFixed(2)}
+        </p>
+        {!hasData && <p className="text-xs text-gray-400 mt-1">Add transactions to see your balance</p>}
+      </div>
+    </div>
+  )
+}
+
+async function ChartSection() {
+  const currentYear = new Date().getFullYear()
+  const chartRes = await getMonthlyData(currentYear)
+  if (!chartRes.success || !chartRes.data) {
+    return <ErrorBanner message={chartRes.error ?? "Failed to load chart data"} onRetryLabel="Reload page" />
+  }
+  return <MonthlyChart data={chartRes.data} />
+}
+
+export default function DashboardPage() {
+  return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Dashboard</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-gray-500 text-sm">Total Income</p>
-          <p className="text-2xl font-bold text-green-600">
-            ${summary.totalIncome.toFixed(2)}
-          </p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-gray-500 text-sm">Total Expenses</p>
-          <p className="text-2xl font-bold text-red-600">
-            ${summary.totalExpenses.toFixed(2)}
-          </p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <p className="text-gray-500 text-sm">Current Balance</p>
-          <p className="text-2xl font-bold">
-            ${summary.balance.toFixed(2)}
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-gray-500 text-sm">Your financial overview</p>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow h-64 flex flex-col items-center justify-center text-gray-400">
-        <span className="italic">Chart placeholder (Recharts)</span>
-        <p className="text-sm mt-2">Monthly income vs expenses will be displayed here.</p>
-      </div>
+      <Suspense fallback={
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
+        </div>
+      }>
+        <SummaryCards />
+      </Suspense>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="font-bold mb-4">Recent Transactions</h3>
-          <p className="text-sm text-gray-500 italic">No recent transactions to display.</p>
+      <Suspense fallback={
+        <div className="bg-white p-6 rounded-lg shadow animate-pulse h-72 flex items-center justify-center">
+          <div className="h-6 bg-gray-200 rounded w-48" />
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="font-bold mb-4">Top Categories</h3>
-          <p className="text-sm text-gray-500 italic">No category data to display.</p>
-        </div>
-      </div>
+      }>
+        <ChartSection />
+      </Suspense>
     </div>
   )
 }
