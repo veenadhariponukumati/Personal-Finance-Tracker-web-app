@@ -34,7 +34,7 @@ A production-quality personal finance web app built with Next.js — track incom
 Create a `.env` file in the root directory:
 ```env
 DATABASE_URL="postgresql://finance:finance123@localhost:5432/finance_tracker?schema=public"
-NEXTAUTH_SECRET="your-secret-here"
+AUTH_SECRET="your-secret-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
