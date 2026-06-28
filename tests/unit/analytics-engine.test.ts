@@ -73,16 +73,19 @@ describe("getCategorySpending", () => {
     expect(result).toEqual([])
   })
 
-  it("only includes EXPENSE transactions", async () => {
+  it("correctly groups and sorts multiple expense categories", async () => {
     mockFindMany.mockResolvedValue([
       tx({ amount: 100, type: "EXPENSE", category: { id: "cat-1", name: "Food" } }),
-      tx({ amount: 5000, type: "INCOME", category: { id: "cat-8", name: "Salary" } }),
+      tx({ amount: 200, type: "EXPENSE", category: { id: "cat-2", name: "Rent" } }),
     ])
 
     const result = await getCategorySpending(userId, 1, 2026)
 
-    expect(result).toHaveLength(1)
-    expect(result[0].name).toBe("Food")
+    expect(result).toHaveLength(2)
+    expect(result[0].name).toBe("Rent") // highest first
+    expect(result[0].amount).toBe(200)
+    expect(result[1].name).toBe("Food")
+    expect(result[1].amount).toBe(100)
   })
 
   it("handles decimal amounts", async () => {
