@@ -3,16 +3,16 @@ import { getDashboardSummary, getMonthlyData } from "@/actions/dashboard"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { ErrorBanner } from "@/components/ui/error-banner"
 import { SkeletonCard } from "@/components/ui/loading"
+import { AiInsightCard } from "@/components/dashboard/ai-insight-card"
+import { AskFinancesChat } from "@/components/dashboard/ask-finances"
 
 async function SummaryCards() {
   const summaryRes = await getDashboardSummary()
   if (!summaryRes.success || !summaryRes.data) {
     return <ErrorBanner message={summaryRes.error ?? "Failed to load dashboard data"} onRetryLabel="Reload page" />
   }
-
   const { totalIncome, totalExpenses, balance } = summaryRes.data
   const hasData = totalIncome > 0 || totalExpenses > 0
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
       <div className="bg-white p-5 md:p-6 rounded-lg shadow hover:shadow-md transition-shadow">
@@ -63,13 +63,24 @@ export default function DashboardPage() {
         <SummaryCards />
       </Suspense>
 
-      <Suspense fallback={
-        <div className="bg-white p-6 rounded-lg shadow animate-pulse h-72 flex items-center justify-center">
-          <div className="h-6 bg-gray-200 rounded w-48" />
+      {/* AI features row — chart on left, insights on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Suspense fallback={
+            <div className="bg-white p-6 rounded-lg shadow animate-pulse h-72 flex items-center justify-center">
+              <div className="h-6 bg-gray-200 rounded w-48" />
+            </div>
+          }>
+            <ChartSection />
+          </Suspense>
         </div>
-      }>
-        <ChartSection />
-      </Suspense>
+        <div>
+          <AiInsightCard />
+        </div>
+      </div>
+
+      {/* Ask Finances chat */}
+      <AskFinancesChat />
     </div>
   )
 }
